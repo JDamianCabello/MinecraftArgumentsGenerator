@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Editor de Argumentos Java para Minecraft</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+  <style>
+    .jvm-arg {
+      margin-bottom: 10px;
+    }
+    .output-container {
+      background-color: #f8f9fa;
+      border-radius: 5px;
+      padding: 15px;
+      margin-top: 20px;
+    }
+    .preset-btn {
+      margin-right: 5px;
+      margin-bottom: 5px;
+    }
+    .navbar-brand {
+      font-weight: bold;
+    }
+    .copy-notice {
+      color: green;
+      display: none;
+      margin-top: 5px;
+    }
+    .help-text {
+      font-size: 0.85rem;
+      color: #6c757d;
+      margin-top: 3px;
+    }
+    .section-title {
+      border-bottom: 1px solid #dee2e6;
+      padding-bottom: 8px;
+      margin-bottom: 16px;
+    }
+    .file-path {
+      font-size: 0.85rem;
+      margin-top: 5px;
+      color: #0d6efd;
+      word-break: break-all;
+    }
+    .argument-description {
+      margin-top: 3px;
+      margin-bottom: 15px;
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container">
+      <a class="navbar-brand" href="#">Editor de Argumentos Java para Minecraft</a>
+    </div>
+  </nav>
+
+  <div class="container mt-4 mb-5">
+    <div class="row">
+      <div class="col-lg-9 mx-auto">
+        <div class="card shadow-sm">
+          <div class="card-header bg-light">
+            <h5 class="mb-0">Configuración de Argumentos</h5>
+          </div>
+          <div class="card-body">
+            <div class="mb-4">
+              <label class="form-label fw-bold">Presets</label>
+              <div>
+                <button class="btn btn-sm btn-outline-primary preset-btn" id="preset1">Preset de Alto Rendimiento</button>
+                <button class="btn btn-sm btn-outline-primary preset-btn" id="preset2">Preset CurseForge</button>
+                <button class="btn btn-sm btn-outline-danger preset-btn" id="clearAll">Limpiar Todo</button>
+              </div>
+              <div class="help-text">
+                Los presets configuran automáticamente los argumentos para casos de uso comunes.
+              </div>
+            </div>
+
+            <div id="arguments-container">
+              <!-- Memory Settings -->
+              <div class="mb-4">
+                <h6 class="fw-bold section-title">Configuración de Memoria</h6>
+                <p class="argument-description">
+                  Estos parámetros controlan cuánta memoria RAM puede utilizar Minecraft, afectando directamente al rendimiento del juego.
+                </p>
+                <div class="row mb-2">
+                  <div class="col-md-6 mb-3">
+                    <label class="form-label">Memoria Máxima (Xmx)</label>
+                    <div class="input-group">
+                      <input type="number" class="form-control" id="xmx-value" value="4096">
+                      <select class="form-select" id="xmx-unit">
+                        <option value="m">MB</option>
+                        <option value="G">GB</option>
+                      </select>
+                    </div>
+                    <div class="help-text">
+                      Cantidad máxima de memoria que Java puede utilizar. Para packs de mods grandes, se recomienda 4-8GB.
+                    </div>
+                  </div>
+                  <div class="col-md-6 mb-3">
+                    <label class="form-label">Memoria Inicial (Xms)</label>
+                    <div class="input-group">
+                      <input type="number" class="form-control" id="xms-value" value="256">
+                      <select class="form-select" id="xms-unit">
+                        <option value="m">MB</option>
+                        <option value="G">GB</option>
+                      </select>
+                    </div>
+                    <div class="help-text">
+                      Memoria reservada al inicio. Valores más altos pueden reducir el tiempo de carga inicial.
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Garbage Collection -->
+              <div class="mb-4">
+                <h6 class="fw-bold section-title">Configuración del Recolector de Basura (GC)</h6>
+                <p class="argument-description">
+                  Estos parámetros optimizan cómo Java libera memoria no utilizada, reduciendo las pausas y mejorando el rendimiento.
+                </p>
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" id="use-g1gc" checked>
+                  <label class="form-check-label" for="use-g1gc">Usar G1GC (-XX:+UseG1GC)</label>
+                  <div class="help-text">
+                    G1GC es un recolector de basura moderno que reduce las pausas del juego al liberar memoria.
+                  </div>
+                </div>
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" id="unlock-experimental" checked>
+                  <label class="form-check-label" for="unlock-experimental">Desbloquear opciones experimentales (-XX:+UnlockExperimentalVMOptions)</label>
+                  <div class="help-text">
+                    Permite el uso de características experimentales de optimización en la JVM.
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <label class="form-label">G1NewSizePercent</label>
+                    <div class="input-group">
+                      <input type="number" class="form-control" id="g1new-size" value="20">
+                      <span class="input-group-text">%</span>
+                    </div>
+                    <div class="help-text">
+                      Porcentaje de heap reservado para objetos nuevos. Valores más altos pueden mejorar el rendimiento de mods que crean muchos objetos.
+                    </div>
+                  </div>
+                  <div class="col-md-6 mb-3">
+                    <label class="form-label">G1ReservePercent</label>
+                    <div class="input-group">
+                      <input type="number" class="form-control" id="g1reserve-percent" value="20">
+                      <span class="input-group-text">%</span>
+                    </div>
+                    <div class="help-text">
+                      Porcentaje de heap reservado para evitar fallos de asignación. Útil para prevenir problemas de memoria.
+                    </div>
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <label class="form-label">MaxGCPauseMillis</label>
+                    <div class="input-group">
+                      <input type="number" class="form-control" id="max-gc-pause" value="50">
+                      <span class="input-group-text">ms</span>
+                    </div>
+                    <div class="help-text">
+                      Tiempo máximo de pausa para recolección de basura. Valores más bajos reducen las pausas pero pueden aumentar el uso de CPU.
+                    </div>
+                  </div>
+                  <div class="col-md-6 mb-3">
+                    <label class="form-label">G1HeapRegionSize</label>
+                    <div class="input-group">
+                      <input type="number" class="form-control" id="g1heap-region" value="32">
+                      <span class="input-group-text">M</span>
+                    </div>
+                    <div class="help-text">
+                      Tamaño de las regiones de heap. 32M es un buen valor para 4-8GB de RAM asignada.
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- FML and Directory Settings -->
+              <div class="mb-4">
+                <h6 class="fw-bold section-title">Configuración de Directorios y FML</h6>
+                <p class="argument-description">
+                  Define las rutas de los directorios de Minecraft y controla el comportamiento de Forge Mod Loader.
+                </p>
+                <div class="mb-3">
+                  <label class="form-label">Directorio de Minecraft</label>
+                  <input type="file" class="form-control" id="minecraft-directory-file" webkitdirectory directory>
+                  <div id="minecraft-directory-path" class="file-path"></div>
+                  <input type="hidden" id="minecraft-directory" value="">
+                  <div class="help-text">
+                    Directorio donde se almacenan los datos de la instancia de Minecraft. En Windows típicamente en %appdata%\.minecraft o en la carpeta de tu launcher.
+                  </div>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Directorio de Bibliotecas</label>
+                  <input type="file" class="form-control" id="library-directory-file" webkitdirectory directory>
+                  <div id="library-directory-path" class="file-path"></div>
+                  <input type="hidden" id="library-directory" value="">
+                  <div class="help-text">
+                    Directorio donde se almacenan las bibliotecas y dependencias de Minecraft. Normalmente dentro del directorio del launcher.
+                  </div>
+                </div>
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" id="ignore-patch" checked>
+                  <label class="form-check-label" for="ignore-patch">Ignorar discrepancias de parches (fml.ignorePatchDiscrepancies)</label>
+                  <div class="help-text">
+                    Permite a Forge cargar incluso cuando hay discrepancias en los parches. Útil para mods que modifican archivos core.
+                  </div>
+                </div>
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" id="ignore-certificates" checked>
+                  <label class="form-check-label" for="ignore-certificates">Ignorar certificados de Minecraft inválidos (fml.ignoreInvalidMinecraftCertificates)</label>
+                  <div class="help-text">
+                    Permite a Forge cargar cuando hay archivos de Minecraft modificados o inválidos.
+                  </div>
+                </div>
+              </div>
+
+              <!-- Regional Settings -->
+              <div class="mb-4">
+                <h6 class="fw-bold section-title">Configuración Regional</h6>
+                <p class="argument-description">
+                  Define el idioma y la región que utilizará Minecraft por defecto.
+                </p>
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <label class="form-label">Idioma</label>
+                    <select class="form-select" id="language">
+                      <option value="en">Inglés (en)</option>
+                      <option value="es">Español (es)</option>
+                      <option value="fr">Francés (fr)</option>
+                      <option value="de">Alemán (de)</option>
+                    </select>
+                    <div class="help-text">
+                      Código de idioma que utilizará el juego. Algunos mods pueden requerir idioma específico.
+                    </div>
+                  </div>
+                  <div class="col-md-6 mb-3">
+                    <label class="form-label">País</label>
+                    <select class="form-select" id="country">
+                      <option value="US">Estados Unidos (US)</option>
+                      <option value="ES">España (ES)</option>
+                      <option value="MX">México (MX)</option>
+                      <option value="AR">Argentina (AR)</option>
+                    </select>
+                    <div class="help-text">
+                      Código de país para el formato de fechas, números y otras configuraciones regionales.
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Custom Arguments -->
+              <div class="mb-4">
+                <h6 class="fw-bold section-title">Argumentos Personalizados</h6>
+                <p class="argument-description">
+                  Añade argumentos adicionales específicos para tus necesidades, mods o configuraciones especiales.
+                </p>
+                <div id="custom-args-container">
+                  <div class="input-group mb-2 custom-arg">
+                    <input type="text" class="form-control" placeholder="Argumento personalizado">
+                    <button class="btn btn-outline-danger remove-arg" type="button">Eliminar</button>
+                  </div>
+                </div>
+                <button class="btn btn-outline-success btn-sm" id="add-arg">Añadir Argumento</button>
+                <div class="help-text mt-2">
+                  Aquí puedes añadir cualquier argumento adicional de Java que necesites para tu instalación.
+                </div>
+              </div>
+            </div>
+
+            <div class="text-center mt-4">
+              <button id="generate-button" class="btn btn-primary">Generar Argumentos</button>
+            </div>
+
+            <div class="output-container mt-4">
+              <label class="form-label fw-bold">String de Argumentos:</label>
+              <div class="input-group">
+                <textarea id="result" class="form-control" rows="4" readonly></textarea>
+                <button class="btn btn-outline-secondary" type="button" id="copy-button">Copiar</button>
+              </div>
+              <div class="copy-notice" id="copy-notice">¡Copiado al portapapeles!</div>
+              <div class="help-text mt-2">
+                Esta es la cadena completa de argumentos Java lista para usar en tu launcher de Minecraft.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Handle directory file selection
+      document.getElementById('minecraft-directory-file').addEventListener('change', function(e) {
+        if(this.files && this.files.length > 0) {
+          const path = this.files[0].path || this.files[0].webkitRelativePath || this.value;
+          // Extract directory path
+          const directoryPath = path.split('\\').slice(0, -1).join('\\');
+          document.getElementById('minecraft-directory').value = directoryPath || path;
+          document.getElementById('minecraft-directory-path').textContent = directoryPath || path;
+        }
+      });
+
+      document.getElementById('library-directory-file').addEventListener('change', function(e) {
+        if(this.files && this.files.length > 0) {
+          const path = this.files[0].path || this.files[0].webkitRelativePath || this.value;
+          // Extract directory path
+          const directoryPath = path.split('\\').slice(0, -1).join('\\');
+          document.getElementById('library-directory').value = directoryPath || path;
+          document.getElementById('library-directory-path').textContent = directoryPath || path;
+        }
+      });
+
+      // Set initial values based on preset1
+      loadPreset1();
+
+      // Preset buttons
+      document.getElementById('preset1').addEventListener('click', loadPreset1);
+      document.getElementById('preset2').addEventListener('click', loadPreset2);
+      document.getElementById('clearAll').addEventListener('click', clearAll);
+
+      // Add custom argument
+      document.getElementById('add-arg').addEventListener('click', function() {
+        const container = document.getElementById('custom-args-container');
+        const newArg = document.createElement('div');
+        newArg.className = 'input-group mb-2 custom-arg';
+        newArg.innerHTML = `
+          <input type="text" class="form-control" placeholder="Argumento personalizado">
+          <button class="btn btn-outline-danger remove-arg" type="button">Eliminar</button>
+        `;
+        container.appendChild(newArg);
+        
+        // Add event listener to the new remove button
+        newArg.querySelector('.remove-arg').addEventListener('click', function() {
+          container.removeChild(newArg);
+        });
+      });
+
+      // Remove custom argument (for initial elements)
+      document.querySelectorAll('.remove-arg').forEach(button => {
+        button.addEventListener('click', function() {
+          const arg = this.parentElement;
+          arg.parentElement.removeChild(arg);
+        });
+      });
+
+      // Generate button
+      document.getElementById('generate-button').addEventListener('click', generateArguments);
+
+      // Copy button
+      document.getElementById('copy-button').addEventListener('click', function() {
+        const resultText = document.getElementById('result');
+        resultText.select();
+        document.execCommand('copy');
+        
+        const copyNotice = document.getElementById('copy-notice');
+        copyNotice.style.display = 'block';
+        setTimeout(() => {
+          copyNotice.style.display = 'none';
+        }, 2000);
+      });
+
+      // Function to load preset 1 (High Performance)
+      function loadPreset1() {
+        document.getElementById('xmx-value').value = '10';
+        document.getElementById('xmx-unit').value = 'G';
+        document.getElementById('xms-value').value = '2';
+        document.getElementById('xms-unit').value = 'G';
+        document.getElementById('use-g1gc').checked = true;
+        document.getElementById('unlock-experimental').checked = true;
+        document.getElementById('g1new-size').value = '20';
+        document.getElementById('g1reserve-percent').value = '20';
+        document.getElementById('max-gc-pause').value = '50';
+        document.getElementById('g1heap-region').value = '32';
+        
+        // Clear directory paths
+        document.getElementById('minecraft-directory').value = '';
+        document.getElementById('library-directory').value = '';
+        document.getElementById('minecraft-directory-path').textContent = '';
+        document.getElementById('library-directory-path').textContent = '';
+        
+        document.getElementById('ignore-patch').checked = false;
+        document.getElementById('ignore-certificates').checked = false;
+        document.getElementById('language').value = 'en';
+        document.getElementById('country').value = 'US';
+
+        // Clear custom arguments
+        const customArgsContainer = document.getElementById('custom-args-container');
+        while (customArgsContainer.firstChild) {
+          customArgsContainer.removeChild(customArgsContainer.firstChild);
+        }
+        
+        // Add one empty custom argument field
+        const newArg = document.createElement('div');
+        newArg.className = 'input-group mb-2 custom-arg';
+        newArg.innerHTML = `
+          <input type="text" class="form-control" placeholder="Argumento personalizado">
+          <button class="btn btn-outline-danger remove-arg" type="button">Eliminar</button>
+        `;
+        customArgsContainer.appendChild(newArg);
+        
+        newArg.querySelector('.remove-arg').addEventListener('click', function() {
+          if (customArgsContainer.children.length > 1) {
+            customArgsContainer.removeChild(newArg);
+          }
+        });
+        
+        generateArguments();
+      }
+
+      // Function to load preset 2 (CurseForge)
+      function loadPreset2() {
+        document.getElementById('xmx-value').value = '4096';
+        document.getElementById('xmx-unit').value = 'm';
+        document.getElementById('xms-value').value = '256';
+        document.getElementById('xms-unit').value = 'm';
+        document.getElementById('use-g1gc').checked = false;
+        document.getElementById('unlock-experimental').checked = false;
+        
+        // Set directory paths for preset (these would normally be selected via file input)
+        document.getElementById('minecraft-directory').value = 'C:\\Users\\jdami\\curseforge\\minecraft\\Instances\\fabric';
+        document.getElementById('library-directory').value = 'C:\\Users\\jdami\\curseforge\\minecraft\\Install\\libraries';
+        document.getElementById('minecraft-directory-path').textContent = 'C:\\Users\\jdami\\curseforge\\minecraft\\Instances\\fabric';
+        document.getElementById('library-directory-path').textContent = 'C:\\Users\\jdami\\curseforge\\minecraft\\Install\\libraries';
+        
+        document.getElementById('ignore-patch').checked = true;
+        document.getElementById('ignore-certificates').checked = true;
+        document.getElementById('language').value = 'en';
+        document.getElementById('country').value = 'US';
+
+        // Clear custom arguments
+        const customArgsContainer = document.getElementById('custom-args-container');
+        while (customArgsContainer.firstChild) {
+          customArgsContainer.removeChild(customArgsContainer.firstChild);
+        }
+        
+        // Add one empty custom argument field
+        const newArg = document.createElement('div');
+        newArg.className = 'input-group mb-2 custom-arg';
+        newArg.innerHTML = `
+          <input type="text" class="form-control" placeholder="Argumento personalizado">
+          <button class="btn btn-outline-danger remove-arg" type="button">Eliminar</button>
+        `;
+        customArgsContainer.appendChild(newArg);
+        
+        newArg.querySelector('.remove-arg').addEventListener('click', function() {
+          if (customArgsContainer.children.length > 1) {
+            customArgsContainer.removeChild(newArg);
+          }
+        });
+        
+        generateArguments();
+      }
+
+      // Function to clear all fields
+      function clearAll() {
+        document.getElementById('xmx-value').value = '';
+        document.getElementById('xms-value').value = '';
+        document.getElementById('use-g1gc').checked = false;
+        document.getElementById('unlock-experimental').checked = false;
+        document.getElementById('g1new-size').value = '';
+        document.getElementById('g1reserve-percent').value = '';
+        document.getElementById('max-gc-pause').value = '';
+        document.getElementById('g1heap-region').value = '';
+        
+        // Clear directory paths
+        document.getElementById('minecraft-directory').value = '';
+        document.getElementById('library-directory').value = '';
+        document.getElementById('minecraft-directory-path').textContent = '';
+        document.getElementById('library-directory-path').textContent = '';
+        
+        document.getElementById('ignore-patch').checked = false;
+        document.getElementById('ignore-certificates').checked = false;
+        document.getElementById('language').value = 'en';
+        document.getElementById('country').value = 'US';
+        
+        // Clear custom arguments
+        const customArgsContainer = document.getElementById('custom-args-container');
+        while (customArgsContainer.firstChild) {
+          customArgsContainer.removeChild(customArgsContainer.firstChild);
+        }
+        
+        // Add one empty custom argument field
+        const newArg = document.createElement('div');
+        newArg.className = 'input-group mb-2 custom-arg';
+        newArg.innerHTML = `
+          <input type="text" class="form-control" placeholder="Argumento personalizado">
+          <button class="btn btn-outline-danger remove-arg" type="button">Eliminar</button>
+        `;
+        customArgsContainer.appendChild(newArg);
+        
+        newArg.querySelector('.remove-arg').addEventListener('click', function() {
+          if (customArgsContainer.children.length > 1) {
+            customArgsContainer.removeChild(newArg);
+          }
+        });
+        
+        document.getElementById('result').value = '';
+      }
+
+      // Function to generate arguments
+      function generateArguments() {
+        let args = [];
+        
+        // Memory settings
+        const xmxValue = document.getElementById('xmx-value').value;
+        const xmxUnit = document.getElementById('xmx-unit').value;
+        if (xmxValue) {
+          args.push(`-Xmx${xmxValue}${xmxUnit}`);
+        }
+        
+        const xmsValue = document.getElementById('xms-value').value;
+        const xmsUnit = document.getElementById('xms-unit').value;
+        if (xmsValue) {
+          args.push(`-Xms${xmsValue}${xmsUnit}`);
+        }
+        
+        // GC Settings
+        if (document.getElementById('unlock-experimental').checked) {
+          args.push('-XX:+UnlockExperimentalVMOptions');
+        }
+        
+        if (document.getElementById('use-g1gc').checked) {
+          args.push('-XX:+UseG1GC');
+          
+          const g1NewSize = document.getElementById('g1new-size').value;
+          if (g1NewSize) {
+            args.push(`-XX:G1NewSizePercent=${g1NewSize}`);
+          }
+          
+          const g1Reserve = document.getElementById('g1reserve-percent').value;
+          if (g1Reserve) {
+            args.push(`-XX:G1ReservePercent=${g1Reserve}`);
+          }
+          
+          const maxGCPause = document.getElementById('max-gc-pause').value;
+          if (maxGCPause) {
+            args.push(`-XX:MaxGCPauseMillis=${maxGCPause}`);
+          }
+          
+          const g1HeapRegion = document.getElementById('g1heap-region').value;
+          if (g1HeapRegion) {
+            args.push(`-XX:G1HeapRegionSize=${g1HeapRegion}M`);
+          }
+        }
+        
+        // Directory Settings
+        const minecraftDir = document.getElementById('minecraft-directory').value;
+        if (minecraftDir) {
+          args.push(`-Dminecraft.applet.TargetDirectory="${minecraftDir}"`);
+        }
+        
+        const libraryDir = document.getElementById('library-directory').value;
+        if (libraryDir) {
+          args.push(`-DlibraryDirectory="${libraryDir}"`);
+        }
+        
+        // FML Settings
+        if (document.getElementById('ignore-patch').checked) {
+          args.push('-Dfml.ignorePatchDiscrepancies=true');
+        }
+        
+        if (document.getElementById('ignore-certificates').checked) {
+          args.push('-Dfml.ignoreInvalidMinecraftCertificates=true');
+        }
+        
+        // Regional Settings
+        const language = document.getElementById('language').value;
+        if (language) {
+          args.push(`-Duser.language=${language}`);
+        }
+        
+        const country = document.getElementById('country').value;
+        if (country) {
+          args.push(`-Duser.country=${country}`);
+        }
+        
+        // Custom Arguments
+        document.querySelectorAll('.custom-arg input').forEach(input => {
+          if (input.value.trim()) {
+            args.push(input.value.trim());
+          }
+        });
+        
+        // Set result
+        document.getElementById('result').value = args.join(' ');
+      }
+
+      // Initial generation
+      generateArguments();
+    });
+  </script>
+</body>
+</html>
